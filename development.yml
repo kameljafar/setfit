@@ -1,0 +1,28 @@
+version: '3'
+services:
+  class_demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ID_HOST: ${ID_HOST}
+        ID_PORT: ${ID_PORT}
+        GUNICORN_BIND: ${GUNICORN_BIND}
+        GUNICORN_THREADS: ${GUNICORN_THREADS}
+        GUNICORN_PROCESSES: ${GUNICORN_PROCESSES}
+        GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT}
+    user: root
+    environment:
+      - ID_PORT=${ID_PORT}
+      - DEBUG=${DEBUG}
+      - ID_HOST=${ID_HOST}
+      - MODEL_NAME_OR_PATH=${MODEL_NAME_OR_PATH}
+      - GUNICORN_BIND=${GUNICORN_BIND}
+      - GUNICORN_THREADS=${GUNICORN_THREADS}
+      - GUNICORN_PROCESSES=${GUNICORN_PROCESSES}
+      - GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT}
+    ports:
+      - "${ID_PORT}:${ID_PORT}"
+    restart: unless-stopped
+    volumes:
+      - ./models:/app/models
