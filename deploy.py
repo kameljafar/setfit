@@ -92,7 +92,7 @@ def predict():
         catigories = {
             "Тип_нормы": first_category[0] if first_category and first_category[0] else first_false[0] if first_false else None,
             "Профиль_нормы": second_category[0] if second_category and second_category[0] else second_false[0] if second_false else None,
-            "score": preds_score.item() if (first_category and first_category[0]) or (second_category and second_category[0]) else None
+            "score": preds_score.item()
         }
 
     else:
@@ -101,9 +101,60 @@ def predict():
 
         catigories = {"Тип_нормы": first_category[0],
                       "Профиль_нормы": second_category[0],
-                      "score": None}
+                      "score": preds_score.item()}
     final_output.append({'predictions': catigories})
     return final_output
+
+@app.route('/category', methods=['POST'])
+
+def categories():
+    data = request.get_json(force=True)
+    texts = data['texts']
+    preds = model([texts])
+    output = [[f for f, p in zip(LABELS, ps) if p] for ps in preds]
+    scor = model.predict_proba([texts])
+    preds_list = preds.tolist()[0]
+    scor_list = scor.tolist()[0]
+    predicted_indices = [i for i, p in enumerate(preds_list) if p == 1]
+    output = []
+    other_cates = []
+    for i in range(len(LABELS)):
+        label = LABELS[i]
+        if i in predicted_indices:
+            first_category = next((item for item in FIRST_CATEGORY_DICT if item["en_className"] == label), None)
+            if first_category:
+                output.append({
+                    "first_category": label,
+                    "Тип_нормы": first_category["ru_className"],
+                    "score": scor_list[i]
+                })
+            else:
+                second_category = next((item for item in SECOND_CATEGORY_DICT if item["en_className"] == label), None)
+                if second_category:
+                    output.append({
+                        "second_category": label,
+                        "Профиль_нормы": second_category["ru_className"],
+                        "score": scor_list[i]
+                    })
+        else:
+            first_category = next((item for item in FIRST_CATEGORY_DICT if item["en_className"] == label), None)
+            if first_category:
+                other_cates.append({
+                    "first_category": label,
+                    "score": scor_list[i],
+                    "Тип_нормы": first_category["ru_className"]
+                })
+            else:
+                second_category = next((item for item in SECOND_CATEGORY_DICT if item["en_className"] == label), None)
+                if second_category:
+                    other_cates.append({
+                        "second_category": label,
+                        "score": scor_list[i],
+                        "Профиль_нормы": second_category["ru_className"]
+                    })
+    
+    return jsonify({"output": output, "other_categories": other_cates})
+
 if __name__ == '__main__':
     print (f"server running on {host}/{port}")
     # serve(app, host=host, port=port)
